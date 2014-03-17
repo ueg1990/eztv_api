@@ -8,6 +8,7 @@ which is listed on EZTV.it See how to use it thanks to the file "APIExample.py"
 from bs4 import BeautifulSoup
 import requests
 import re
+from datetime import datetime
 
 URL = "http://eztv.it"
 
@@ -37,6 +38,10 @@ class SeasonNotFound(EztvException):
     """
 
 class EpisodeNotFound(EztvException):
+    """
+        Episode Not Found Exception
+    """
+class DayNotFound(EztvException):
     """
         Episode Not Found Exception
     """
@@ -197,3 +202,30 @@ class EztvAPI(object):
             episodes, magnet.
         """
         return self.load_tv_show_data()
+
+    def get_upcoming_tvshows_on_given_day(self, day=None):
+        result = {}
+        days_of_week = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        current_day_index = datetime.today().weekday()
+        if day == None:
+            day = days_of_week[current_day_index]
+        else:
+            day = day.lower()
+        if days_of_week.index(day) == current_day_index or days_of_week.index(day) == (current_day_index - 1) % 7 or days_of_week.index(day) == (current_day_index + 1) % 7 :
+            req = requests.get(URL + '/calendar/', timeout=5)
+            soup = BeautifulSoup(req.content)      
+            index = current_day_index - days_of_week.index(day)
+            table = soup.find_all('table')[0]
+            days_in_table = table.find_all('td', {"class": "forum_thread_header"})
+            for index, value in enumerate(days_in_table):
+                if day.capitalize() == value.text.strip():
+                    listofShows = table.find_all('table', {"class" : "forum_header_border"})[index]
+                    for i in listofShows.find_all('tr')[1].find_all('td', {"class" : "forum_thread_post"}):
+                        if i.find('a', {"class" : "thread_link"}):
+                            result[i.text.strip()] = URL + i.find('a').get('href')
+                    break 
+        else:
+            raise DayNotFound(
+                    'The day %s is not within one day of the current day, %s.' % (day.capitalize(), days_of_week[current_day_index].capitalize()), None)
+
+        return result
