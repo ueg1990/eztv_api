@@ -214,7 +214,6 @@ class EztvAPI(object):
         if days_of_week.index(day) == current_day_index or days_of_week.index(day) == (current_day_index - 1) % 7 or days_of_week.index(day) == (current_day_index + 1) % 7 :
             req = requests.get(URL + '/calendar/', timeout=5)
             soup = BeautifulSoup(req.content)      
-            index = current_day_index - days_of_week.index(day)
             table = soup.find_all('table')[0]
             days_in_table = table.find_all('td', {"class": "forum_thread_header"})
             for index, value in enumerate(days_in_table):
